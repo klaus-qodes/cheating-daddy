@@ -10,7 +10,7 @@
  * - Application: 9 channels (version, quit, restart, external, permissions, validation)
  * - Update: 4 channels (open/close update/upgrade dialogs)
  *
- * Total: 56 IPC channels documented in docs/IPC-SURFACE.md
+ * Total: 53 IPC channels documented in docs/IPC-SURFACE.md
  *
  * Usage:
  * ```javascript
@@ -57,7 +57,7 @@ function initializeIpcGateway({
     createUpdateWindow,
 }) {
     console.log('[IPC Gateway] Initializing IPC handlers...');
-    console.log('[IPC Gateway] Registering 58 total IPC channels across 5 subsystems');
+    console.log('[IPC Gateway] Registering 53 total IPC channels across 5 subsystems');
 
     // ============ STORAGE SUBSYSTEM (24 channels) ============
     registerStorageHandlers(storage, rateLimitManager);
@@ -93,7 +93,7 @@ function initializeIpcGateway({
 
     console.log('[IPC Gateway] ═══════════════════════════════════════════');
     console.log('[IPC Gateway] All IPC handlers initialized successfully');
-    console.log('[IPC Gateway] Total channels: 56 (see docs/IPC-SURFACE.md)');
+    console.log('[IPC Gateway] Total channels: 53 (see docs/IPC-SURFACE.md)');
     console.log('[IPC Gateway] ═══════════════════════════════════════════');
 }
 

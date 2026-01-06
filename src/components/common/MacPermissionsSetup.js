@@ -514,7 +514,7 @@ export class MacPermissionsSetup extends LitElement {
 
         // With ScreenCaptureKit, we need microphone AND screen recording permissions
         // System audio is captured via Screen Recording permission (restart required)
-        const allGranted = this.permissions.microphone === 'granted';
+        const allGranted = this.permissions.microphone === 'granted' && this.permissions.screen === 'granted';
 
         return html`
             <div class="permissions-container">
@@ -531,7 +531,7 @@ export class MacPermissionsSetup extends LitElement {
                 ? html`
                         <div class="restart-note">
                             ⚠️ <strong>Audio capture is not available</strong> on this macOS version. 
-                            Please update to macOS 14.2 (Sonoma) or later to use system audio features.
+                            Please update to macOS 13.0 (Ventura) or later to use system audio features.
                         </div>
                     `
                 : allGranted
@@ -575,7 +575,10 @@ export class MacPermissionsSetup extends LitElement {
                                     <span class="permission-desc">Captured via Screen Recording permissions</span>
                                 </div>
                                 <div class="permission-status">
-                                    <span class="status-badge status-granted">✓ Included</span>
+                                    ${this.permissions.screen === 'granted'
+                            ? html`<span class="status-badge status-granted">✓ Available</span>`
+                            : html`<span class="status-badge status-unknown">Requires Screen Recording</span>`
+                        }
                                 </div>
                             </div>
 

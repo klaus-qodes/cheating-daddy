@@ -36,15 +36,16 @@ CONFIG.MAX_BUFFER_SIZE = CONFIG.SAMPLE_RATE * CONFIG.BYTES_PER_SAMPLE * CONFIG.M
  * AudioCaptureManager class (Simplified for ScreenCaptureKit)
  * 
  * Events:
- * - 'audio': Emitted with { buffer, timestamp } for each audio chunk
- * - 'error': Emitted on capture errors
+ * Events:
  * - 'stopped': Emitted when capture stops
+ * 
+ * Note: 'audio' and 'error' events are handled directly in the renderer
+ * via MediaStream API, not emitted by this manager in the new architecture.
  */
 class AudioCaptureManager extends EventEmitter {
     constructor() {
         super();
         this.isCapturing = false;
-        this.audioQueue = [];
 
         console.log('[AudioCaptureManager] Initialized (ScreenCaptureKit mode - audio handled in renderer)');
     }
@@ -100,8 +101,6 @@ class AudioCaptureManager extends EventEmitter {
 
         console.log('[AudioCaptureManager] Stopping audio capture...');
 
-        // Clear queue
-        this.audioQueue = [];
         this.isCapturing = false;
 
         this.emit('stopped');
@@ -113,13 +112,6 @@ class AudioCaptureManager extends EventEmitter {
      */
     get capturing() {
         return this.isCapturing;
-    }
-
-    /**
-     * Get current queue size
-     */
-    get queueSize() {
-        return this.audioQueue.length;
     }
 }
 
