@@ -6,11 +6,23 @@
 
 ---
 
+> [!CAUTION]
+> ## 🧪 EXPERIMENTAL BRANCH
+> This is the `macos-experimental` branch. It uses **Chromium's native ScreenCaptureKit** for macOS audio capture instead of the `audiotee` binary.
+>
+> **Differences from main:**
+> - ✅ No external binary required (smaller app size)
+> - ✅ Uses familiar Screen Recording permission (better compatibility)
+> - ✅ Supports macOS 13.0+ (wider support than audiotee's 14.2+ requirement)
+> - ⚠️ **Requires app restart** after granting Screen Recording permission
+>
+> If you experience issues, switch back to the `master` branch which uses `audiotee`.
+
 ---
 
-## 🌟 What's New in v0.5.7
+## 🌟 What's New in v0.5.7-experimental
 
-- **Universal macOS Audio Pipeline** — Replaced `SystemAudioDump` with `AudioTee` for reliable 100% system audio capture on Apple Silicon.
+- **ScreenCaptureKit Audio** — Uses Chromium's native ScreenCaptureKit integration for system audio (no external binaries!)
 - **Billing Mode (Paid Keys)** — Bypass local rate limits for paid Gemini/Groq accounts with the new "Billing Enabled" toggle.
 - **Enhanced Stealth** — Disguised process as `systemcontainer` and added a **Unified Stealth Error Bar** at the bottom center.
 - **Fixed macOS Permissions** — Corrected signing entitlements to prevent the "Microphone Permission Denied" loop.
@@ -80,36 +92,43 @@
 
 ---
 
-## 🍎 macOS Installation (Important!)
+## 🍎 macOS Installation (Manual Steps Required)
 
-> **Note:** This app is not signed with an Apple Developer ID. macOS will block it by default. Follow these steps to install:
+> **⚠️ Security Warning:** This app is not signed with an Apple Developer ID. It will be blocked by Gatekeeper.
 
-### Step 1: Remove Quarantine Block
+### Step 1: Remove "App is Damaged" Block
 
-After downloading and copying to Applications, open **Terminal** and run:
+You **cannot** double-click the app immediately. You must manually clear the quarantine attribute.
+
+1.  Download the `.dmg` and drag the app to your **Applications** folder.
+2.  Open **Terminal** and copy-paste the following command:
 
 ```bash
-sudo xattr -dr com.apple.quarantine "/Applications/Cheating Daddy On Steroids.app"
+sudo xattr -cr "/Applications/Cheating Daddy On Steroids.app"
 ```
+*(Enter your password when prompted - it won't show while typing)*
 
-Then right-click the app → **Open** → Click **Open** in the dialog.
+3.  Now you can open the app normally.
 
-### Step 2: Grant Permissions
+### Step 2: Grant Permissions & Restart
 
-The app will guide you through granting permissions. If permissions get stuck:
+For **System Audio** to work, you must grant Screen Recording permissions and then **RESTART** the app.
 
-| Issue | Terminal Command |
-|-------|------------------|
-| Microphone not working | `tccutil reset Microphone` |
-| Screen recording stuck | `tccutil reset ScreenCapture` |
-| Audio capture failing | Restart the app after granting permissions |
+1.  Open the app and follow the permission prompts.
+2.  Grant **Microphone** and **Screen Recording**.
+3.  **IMPORTANT:** Fully **Quit (Cmd+Q)** and **Restart** the app.
+    *   *Without a restart, system audio capture will be silent.*
 
-### Step 3: Restart if Needed
+### Troubleshooting
 
-If microphone permission was denied initially, you'll need to:
-1. Open **System Settings → Privacy & Security → Microphone**
-2. Enable the app
-3. Fully quit and restart the app
+If permissions get stuck or audio is silent:
+
+| Issue | Solution |
+|-------|----------|
+| **App Damaged / Trash** | Run `sudo xattr -cr /Applications/Cheating\ Daddy\ On\ Steroids.app` |
+| **Silent Audio** | Restart the app. If still silent, reset: `tccutil reset ScreenCapture` |
+| **Microphone Fail** | Reset permissions: `tccutil reset Microphone` |
+
 
 ---
 
@@ -157,9 +176,9 @@ If microphone permission was denied initially, you'll need to:
 
 | Platform | Method |
 |----------|--------|
-| **macOS** | [AudioTee](https://github.com/makeusabrew/audiotee) via Core Audio Taps (requires macOS 14.2+) |
+| **macOS** | ScreenCaptureKit via Chromium (requires macOS 13.0+, Screen Recording permission) |
 | **Windows** | Loopback audio capture |
-| **Linux** | Microphone input |
+| **Linux** | getDisplayMedia system audio |
 
 ---
 

@@ -313,27 +313,53 @@ async function startCapture(screenshotIntervalSeconds = 5, imageQuality = 'mediu
 
     try {
         if (isMacOS) {
-            // On macOS, use audiotee (Core Audio Taps) for audio and getDisplayMedia for screen
-            console.log('Starting macOS capture with audiotee (Core Audio Taps)...');
+            // EXPERIMENTAL: Use ScreenCaptureKit via Chromium's native integration (macOS 13+)
+            // This replaces audiotee (Core Audio Taps) for better compatibility with ad-hoc signing
+            // Trade-off: Requires app restart after granting Screen Recording permission
+            console.log('Starting macOS capture with ScreenCaptureKit (via Chromium)...');
 
-            // Start macOS audio capture
-            const audioResult = await window.electronAPI.audio.startMacOSAudio();
-            if (!audioResult.success) {
-                throw new Error('Failed to start macOS audio capture: ' + audioResult.error);
+            try {
+                // Get screen + system audio via ScreenCaptureKit
+                // The Chromium flags (MacLoopbackAudioForScreenShare, MacSckSystemAudioLoopbackOverride) 
+                // enable system audio capture through the standard Screen Recording permission
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        frameRate: 1,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                    },
+                    audio: {
+                        sampleRate: SAMPLE_RATE,
+                        channelCount: 1,
+                        echoCancellation: false, // Don't cancel system audio
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                    },
+                });
+
+                console.log('macOS ScreenCaptureKit capture started - system audio:', mediaStream.getAudioTracks().length > 0);
+
+                // Setup audio processing (same as Linux)
+                if (mediaStream.getAudioTracks().length > 0) {
+                    setupLinuxSystemAudioProcessing();
+                } else {
+                    console.warn('macOS: No system audio track available. User may need to grant Screen Recording permission and restart.');
+                }
+            } catch (screenCaptureError) {
+                console.warn('macOS ScreenCaptureKit failed, trying screen-only:', screenCaptureError);
+
+                // Fallback to screen-only if audio capture fails
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        frameRate: 1,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                    },
+                    audio: false,
+                });
             }
 
-            // Get screen capture for screenshots
-            mediaStream = await navigator.mediaDevices.getDisplayMedia({
-                video: {
-                    frameRate: 1,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                },
-                audio: false, // Don't use browser audio on macOS
-            });
-
-            console.log('macOS screen capture started - audio handled by audiotee');
-
+            // Additionally get microphone input based on audio mode
             if (audioMode === 'mic_only' || audioMode === 'both') {
                 let micStream = null;
                 try {
@@ -782,12 +808,8 @@ function stopCapture() {
         mediaStream = null;
     }
 
-    // Stop macOS audio capture if running
-    if (isMacOS) {
-        window.electronAPI.audio.stopMacOSAudio().catch(err => {
-            console.error('Error stopping macOS audio:', err);
-        });
-    }
+    // Note: macOS system audio is now captured via ScreenCaptureKit in the renderer
+    // No separate process to stop - media stream tracks are stopped above
 
     // Clean up hidden elements
     if (hiddenVideo) {

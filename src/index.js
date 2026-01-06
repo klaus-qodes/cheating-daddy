@@ -6,10 +6,20 @@ const { app, BrowserWindow, shell, ipcMain, globalShortcut, systemPreferences } 
 const { createWindow, createUpdateWindow, createUpgradeWindow, createSplashWindow, updateGlobalShortcuts } = require('./utils/window');
 const { checkForUpdates, isNewerVersion, getCurrentVersion } = require('./utils/updateChecker');
 const assistantManager = require('./utils/core/assistantManager');
-const { stopMacOSAudioCapture, sendToRenderer, toggleManualRecording } = assistantManager;
+const { sendToRenderer, toggleManualRecording } = assistantManager;
 const storage = require('./storage');
 const rateLimitManager = require('./utils/rateLimitManager');
 const { initializeIpcGateway } = require('./core/ipc/gateway');
+
+// EXPERIMENTAL: Enable ScreenCaptureKit for macOS system audio capture
+// This uses Chromium's native ScreenCaptureKit integration (macOS 13+)
+// Benefits: No external binaries needed, uses familiar Screen Recording permission
+// Trade-off: Requires app restart after granting permission (unlike Core Audio Taps)
+if (process.platform === 'darwin') {
+    app.commandLine.appendSwitch('enable-features',
+        'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride');
+    console.log('[macOS] Enabled ScreenCaptureKit for system audio capture');
+}
 
 const geminiSessionRef = { current: null };
 let mainWindow = null;
@@ -25,22 +35,22 @@ console.log('App Startup: skipUpgradeCheck =', skipUpgradeCheck);
  */
 function killZombieProcesses() {
     if (process.platform !== 'win32') return;
-    
+
     try {
         const { execSync } = require('child_process');
         const currentPid = process.pid;
         const appName = 'Cheating Daddy On Steroids';
-        
+
         // Get list of processes with matching name, excluding current process
         const cmd = `powershell -Command "Get-Process -Name '${appName}' -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne ${currentPid} } | Select-Object -ExpandProperty Id"`;
-        
+
         const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 }).trim();
-        
+
         if (result) {
             const pids = result.split('\n').map(p => p.trim()).filter(p => p);
             if (pids.length > 0) {
                 console.log(`[Zombie Cleanup] Found ${pids.length} zombie process(es): ${pids.join(', ')}`);
-                
+
                 // Kill each zombie process
                 pids.forEach(pid => {
                     try {
@@ -51,7 +61,7 @@ function killZombieProcesses() {
                         console.warn(`[Zombie Cleanup] Could not kill ${pid}:`, killError.message);
                     }
                 });
-                
+
                 // Small delay to ensure shortcuts are released
                 const waitSync = (ms) => {
                     const end = Date.now() + ms;
@@ -82,20 +92,20 @@ killZombieProcesses();
  */
 function checkMacOSVersion() {
     if (process.platform !== 'darwin') return { isSupported: true };
-    
+
     try {
         const macOS = require('./utils/core/macOS');
         const support = macOS.checkAudioSupport();
         const statusMessage = macOS.getVersionStatusMessage();
-        
+
         console.log(`[macOS Version] ${statusMessage.title}`);
         console.log(`[macOS Version] ${statusMessage.message}`);
         console.log(`[macOS Version] Audio support: ${support.isSupported ? 'YES' : 'NO'}`);
-        
+
         if (!support.isSupported) {
             console.warn('[macOS Version] ⚠️ System audio capture will NOT work on this macOS version');
         }
-        
+
         return support;
     } catch (error) {
         console.error('[macOS Version] Error checking version:', error);
@@ -110,12 +120,12 @@ function checkMacOSVersion() {
  */
 async function requestMacPermissions() {
     if (process.platform !== 'darwin') return;
-    
+
     try {
         // Check microphone permission status
         const micStatus = systemPreferences.getMediaAccessStatus('microphone');
         console.log('[macOS Permissions] Microphone status:', micStatus);
-        
+
         // If not determined, request permission (shows native dialog)
         if (micStatus === 'not-determined') {
             console.log('[macOS Permissions] Requesting microphone access...');
@@ -124,11 +134,11 @@ async function requestMacPermissions() {
         } else if (micStatus === 'denied') {
             console.log('[macOS Permissions] Microphone was denied - user needs to grant in System Preferences');
         }
-        
+
         // Check screen recording status (can only check, not request)
         const screenStatus = systemPreferences.getMediaAccessStatus('screen');
         console.log('[macOS Permissions] Screen Recording status:', screenStatus);
-        
+
         if (screenStatus !== 'granted') {
             console.log('[macOS Permissions] Screen Recording not granted - user needs to grant in System Preferences > Privacy & Security > Screen Recording');
         }
@@ -282,12 +292,12 @@ app.whenReady().then(async () => {
                     // Mark version as seen AFTER clearing so dialog won't show on restart
                     const currentVersion = app.getVersion();
                     storage.markVersionSeen(currentVersion);
-                    
+
                     // Build relaunch args - preserve existing args and add skip flag
                     const relaunchArgs = process.argv.slice(1).filter(arg => arg !== '--skip-upgrade-check');
                     relaunchArgs.push('--skip-upgrade-check');
                     console.log('App Startup: Relaunching with args:', relaunchArgs);
-                    
+
                     // Restart the app with flag to skip upgrade check
                     app.relaunch({ args: relaunchArgs });
                     app.quit();
@@ -316,9 +326,9 @@ app.whenReady().then(async () => {
         if (process.platform === 'darwin') {
             await requestMacPermissions();
         }
-        
+
         createMainWindow();
-        
+
         // Initialize IPC Gateway (Phase-3 refactoring)
         // This centralizes all IPC handler registration for 58 channels
         initializeIpcGateway({
@@ -331,7 +341,7 @@ app.whenReady().then(async () => {
             updateGlobalShortcuts,
             createUpdateWindow,
         });
-        
+
         // Note: All IPC handlers are now registered through the gateway
         // Legacy setup functions have been migrated:
         // - setupStorageIpcHandlers() -> storageHandler.js (24 channels)
@@ -343,14 +353,12 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-    stopMacOSAudioCapture();
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
 app.on('before-quit', () => {
-    stopMacOSAudioCapture();
     // Flush rate limit data to disk before quitting
     rateLimitManager.flushSync();
 });

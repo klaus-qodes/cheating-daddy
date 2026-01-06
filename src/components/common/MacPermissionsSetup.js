@@ -4,15 +4,14 @@ import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
  * MacPermissionsSetup - A helper component for Mac users to grant permissions
  * Shows permission status, macOS version warnings, and provides one-click access to System Preferences
  * 
- * Uses audiotee for audio capture (Core Audio Taps API):
- * - Requires macOS 14.2+ (Sonoma)
- * - Uses NSAudioCaptureUsageDescription (NOT Screen Recording for audio)
- * - No app restart required after granting audio permission!
+ * EXPERIMENTAL BRANCH: Uses ScreenCaptureKit via Chromium
+ * - Requires macOS 13.0+ (Ventura)
+ * - Uses Screen Recording permission for both video and audio
+ * - App restart required after granting Screen Recording permission
  * 
  * Permissions:
  * - Microphone: Required for voice input
- * - System Audio: Handled automatically by Core Audio Taps
- * - Screen Recording: Optional, for screen analysis features
+ * - Screen Recording: Required for screen analysis AND system audio capture
  */
 export class MacPermissionsSetup extends LitElement {
     static styles = css`
@@ -510,11 +509,11 @@ export class MacPermissionsSetup extends LitElement {
             `;
         }
 
-        // Check if macOS version is unsupported (requires 14.2+ for Core Audio Taps)
+        // Check if macOS version is unsupported (requires 13.0+ for ScreenCaptureKit)
         const versionUnsupported = this.versionInfo && !this.versionInfo.isSupported;
 
-        // With audiotee (Core Audio Taps), we only need microphone permission
-        // Audio capture permission is handled automatically by macOS when audiotee runs
+        // With ScreenCaptureKit, we need microphone AND screen recording permissions
+        // System audio is captured via Screen Recording permission (restart required)
         const allGranted = this.permissions.microphone === 'granted';
 
         return html`
@@ -573,10 +572,10 @@ export class MacPermissionsSetup extends LitElement {
                             <div class="permission-row">
                                 <div class="permission-info">
                                     <span class="permission-name">🔊 System Audio</span>
-                                    <span class="permission-desc">Handled automatically via Core Audio Taps</span>
+                                    <span class="permission-desc">Captured via Screen Recording permissions</span>
                                 </div>
                                 <div class="permission-status">
-                                    <span class="status-badge status-granted">✓ Auto</span>
+                                    <span class="status-badge status-granted">✓ Included</span>
                                 </div>
                             </div>
 
@@ -584,7 +583,7 @@ export class MacPermissionsSetup extends LitElement {
                             <div class="permission-row">
                                 <div class="permission-info">
                                     <span class="permission-name">🖥️ Screen Recording</span>
-                                    <span class="permission-desc">Optional - for screen analysis features</span>
+                                    <span class="permission-desc">Required for system audio & screen analysis</span>
                                 </div>
                                 <div class="permission-status">
                                     ${this.getStatusBadge(this.permissions.screen)}
@@ -598,10 +597,10 @@ export class MacPermissionsSetup extends LitElement {
                                 </div>
                             </div>
                             
-                            ${this.permissions.microphone === 'denied'
+                            ${(this.permissions.microphone === 'denied' || this.permissions.screen !== 'granted')
                             ? html`
                                     <div class="restart-note">
-                                        ⚠️ After enabling microphone in System Settings, <strong>restart the app</strong> for changes to take effect.
+                                        ⚠️ After granting permissions in System Settings, <strong>restart the app</strong> for changes to take effect.
                                     </div>
                                 `
                             : ''}

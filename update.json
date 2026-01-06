@@ -1,11 +1,12 @@
 {
-    "version": "0.5.7",
-    "buildDate": "2026-01-06",
-    "message": "AudioTee, Billing Mode & Stealth Updates",
+    "version": "0.5.7-experimental",
+    "buildDate": "2026-01-07",
+    "message": "ScreenCaptureKit Audio, Billing Mode & Stealth Updates",
     "downloadUrl": "https://drive.google.com/drive/folders/1gqDBo0cOhtA6rs0MDbg0WOcY0iDOibkO?usp=sharing",
-    "releaseChannel": "stable",
+    "releaseChannel": "experimental",
     "releaseNotes": [
-        "Universal macOS Audio (AudioTee)",
+        "ScreenCaptureKit Audio (no external binary!)",
+        "macOS 13.0+ support (was 14.2+)",
         "Billing Mode for paid API keys",
         "Stealth process & error bar improvements",
         "Fixed macOS microphone permissions"

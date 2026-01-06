@@ -4,7 +4,8 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
     packagerConfig: {
         asar: true,
-        extraResource: ['./src/assets/audiotee'],
+        // EXPERIMENTAL: audiotee removed - now using ScreenCaptureKit via Chromium
+        // extraResource: ['./src/assets/audiotee'],
         // App Bundle Name (Visible in Finder/Shortcuts)
         name: 'Cheating Daddy On Steroids',
         // Stealth: Process Name (Visible in Task Manager details)
@@ -22,13 +23,13 @@ module.exports = {
         extendInfo: {
             // Stealth: Agent app mode - hides from Dock and Cmd+Tab on macOS
             LSUIElement: true,
-            // Minimum macOS version (Core Audio Taps requires 14.2+)
-            LSMinimumSystemVersion: '14.2',
+            // EXPERIMENTAL: ScreenCaptureKit requires macOS 13.0+
+            // (Previously audiotee/Core Audio Taps required 14.2+)
+            LSMinimumSystemVersion: '13.0',
             NSMicrophoneUsageDescription: 'Cheating Daddy On Steroids needs microphone access to capture audio for AI transcription.',
-            // Screen recording description (required for screen analysis mode)
-            NSScreenCaptureUsageDescription: 'Cheating Daddy On Steroids needs screen recording access for screen analysis features.',
-            // Audio capture description (for Core Audio Taps - audiotee)
-            // This is the permission that audiotee uses - no app restart required!
+            // Screen recording description (required for screen analysis AND audio capture via ScreenCaptureKit)
+            NSScreenCaptureUsageDescription: 'Cheating Daddy On Steroids needs screen recording access for screen analysis and system audio capture.',
+            // Audio capture description (legacy - may still be used by some frameworks)
             NSAudioCaptureUsageDescription: 'Cheating Daddy On Steroids needs audio capture access to record system audio for AI transcription.',
             // Required for hardened runtime
             NSAppleEventsUsageDescription: 'Cheating Daddy On Steroids needs to control System Preferences to help grant permissions.',

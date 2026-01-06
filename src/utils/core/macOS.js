@@ -1,15 +1,22 @@
 /**
  * macOS Utilities Module
  * 
+ * EXPERIMENTAL BRANCH: Updated for ScreenCaptureKit integration.
+ * 
  * Provides macOS-specific utilities including:
  * - Version detection and validation
  * - Feature compatibility checking
  * - Permission handling helpers
  * 
- * Audio capture uses audiotee (Core Audio Taps API) which requires macOS 14.2+
- * This provides a better user experience than ScreenCaptureKit:
- * - No app restart required after granting permission
- * - Uses NSAudioCaptureUsageDescription instead of Screen Recording
+ * Audio capture now uses ScreenCaptureKit via Chromium (macOS 13.0+)
+ * instead of audiotee (Core Audio Taps, macOS 14.2+).
+ * 
+ * ScreenCaptureKit advantages:
+ * - No external binary required
+ * - Uses familiar Screen Recording permission
+ * - Wider macOS support (13.0+ vs 14.2+)
+ * 
+ * Trade-off: Requires app restart after granting permission
  */
 
 const { execSync } = require('child_process');
@@ -17,17 +24,17 @@ const { execSync } = require('child_process');
 /**
  * Minimum macOS version requirements for audio features
  * 
- * audiotee uses Core Audio Taps API which requires macOS 14.2+
- * Released December 2023 with macOS Sonoma 14.2
+ * ScreenCaptureKit requires macOS 13.0+ (Ventura)
+ * Previously: audiotee required macOS 14.2+ (Sonoma)
  */
 const MACOS_REQUIREMENTS = {
-    // Minimum version for Core Audio Taps (audiotee)
-    MIN_MAJOR_VERSION: 14,
-    MIN_MINOR_VERSION: 2,
+    // Minimum version for ScreenCaptureKit
+    MIN_MAJOR_VERSION: 13,
+    MIN_MINOR_VERSION: 0,
     // Full version string for display
-    MIN_VERSION_STRING: '14.2',
+    MIN_VERSION_STRING: '13.0',
     // Code name for display
-    MIN_VERSION_CODENAME: 'Sonoma',
+    MIN_VERSION_CODENAME: 'Ventura',
 };
 
 /**
@@ -62,9 +69,9 @@ function getMacOSVersion() {
         }).trim();
 
         const parsed = parseVersion(versionOutput);
-        
+
         console.log(`[macOS] Detected version: ${versionOutput} (major: ${parsed.major})`);
-        
+
         return {
             version: versionOutput,
             ...parsed,
@@ -77,7 +84,7 @@ function getMacOSVersion() {
 
 /**
  * Check if the current macOS version supports audio capture
- * Requires macOS 14.2+ for Core Audio Taps API (audiotee)
+ * Requires macOS 13.0+ for ScreenCaptureKit API
  * 
  * @returns {{ isSupported: boolean, version: string | null, reason: string | null }}
  */
@@ -91,7 +98,7 @@ function checkAudioSupport() {
     }
 
     const versionInfo = getMacOSVersion();
-    
+
     if (!versionInfo) {
         return {
             isSupported: false,
@@ -100,11 +107,11 @@ function checkAudioSupport() {
         };
     }
 
-    // Check if version is 14.2 or higher
-    const meetsRequirement = 
+    // Check if version is 13.0 or higher
+    const meetsRequirement =
         versionInfo.major > MACOS_REQUIREMENTS.MIN_MAJOR_VERSION ||
-        (versionInfo.major === MACOS_REQUIREMENTS.MIN_MAJOR_VERSION && 
-         versionInfo.minor >= MACOS_REQUIREMENTS.MIN_MINOR_VERSION);
+        (versionInfo.major === MACOS_REQUIREMENTS.MIN_MAJOR_VERSION &&
+            versionInfo.minor >= MACOS_REQUIREMENTS.MIN_MINOR_VERSION);
 
     if (!meetsRequirement) {
         return {
@@ -129,7 +136,7 @@ function checkAudioSupport() {
  */
 function getVersionStatusMessage() {
     const support = checkAudioSupport();
-    
+
     if (!support.version) {
         return {
             title: 'macOS Version Unknown',
@@ -148,7 +155,7 @@ function getVersionStatusMessage() {
 
     return {
         title: `macOS ${support.version} ✓`,
-        message: 'Your macOS version fully supports audio capture via Core Audio Taps.',
+        message: 'Your macOS version fully supports audio capture via ScreenCaptureKit.',
         severity: 'success',
     };
 }
@@ -183,7 +190,7 @@ function getSystemInfo() {
 
     const versionInfo = getMacOSVersion();
     let chipType = 'unknown';
-    
+
     try {
         // Check if running on Apple Silicon
         const archOutput = execSync('uname -m', { encoding: 'utf8', timeout: 3000 }).trim();

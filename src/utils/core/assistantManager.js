@@ -4,9 +4,6 @@ const { getSystemPrompt, buildSystemPrompt } = require('../prompts');
 const { getAvailableModel, incrementLimitCount, getApiKey, getPreferences, getCustomProfiles } = require('../../storage');
 const { generateText, analyzeImage, processAudio } = require('../providers/registry');
 
-// Unified Audio Capture Manager
-const { audioCaptureManager, AudioCaptureManager, CONFIG: AUDIO_CONFIG } = require('../../core/audio/AudioCaptureManager');
-
 const { formatSpeakerResults } = require('./aiHelpers');
 const { RATE_LIMIT_EXCEEDED } = require('./errors');
 const { SpeechBuffer } = require('../../core/audio/SpeechBuffer');
@@ -137,7 +134,7 @@ function getRecentUnifiedContext(count = 2) {
     console.log('[Context] Getting unified context...');
     console.log('[Context] conversationHistory length:', conversationHistory?.length || 0);
     console.log('[Context] screenAnalysisHistory length:', screenAnalysisHistory?.length || 0);
-    
+
     // Normalize conversation history (audio/text mode)
     // For audio, the transcription IS the actual question
     const audioEntries = (conversationHistory || []).map(turn => ({
@@ -925,53 +922,8 @@ function setupAssistantIpcHandlers(geminiSessionRef) {
         }
     });
 
-    ipcMain.handle('start-macos-audio', async event => {
-        if (process.platform !== 'darwin') {
-            return {
-                success: false,
-                error: 'macOS audio capture only available on macOS',
-            };
-        }
-
-        try {
-            // Setup audio event handler to forward to Gemini
-            audioCaptureManager.removeAllListeners('audio');
-            audioCaptureManager.on('audio', async ({ base64Data }) => {
-                if (geminiSessionRef.current) {
-                    try {
-                        await geminiSessionRef.current.sendRealtimeInput({
-                            audio: {
-                                data: base64Data,
-                                mimeType: `audio/pcm;rate=${AUDIO_CONFIG.SAMPLE_RATE}`,
-                            },
-                        });
-                    } catch (error) {
-                        console.error('[AssistantManager] Error sending audio to Gemini:', error);
-                    }
-                }
-            });
-
-            const result = await audioCaptureManager.start();
-            return result;
-        } catch (error) {
-            console.error('Error starting macOS audio capture:', error);
-            return { success: false, error: error.message };
-        }
-    });
-
-    ipcMain.handle('stop-macos-audio', async event => {
-        try {
-            audioCaptureManager.stop();
-            return { success: true };
-        } catch (error) {
-            console.error('Error stopping macOS audio capture:', error);
-            return { success: false, error: error.message };
-        }
-    });
-
     ipcMain.handle('close-session', async event => {
         try {
-            audioCaptureManager.stop();
 
             // Set flag to prevent reconnection attempts
             isUserClosing = true;
@@ -1076,20 +1028,6 @@ module.exports = {
     initializeNewSession,
     saveConversationTurn,
     getCurrentSessionData,
-    // Audio capture
-    audioCaptureManager,
-    AudioCaptureManager,
-    startMacOSAudioCapture: async (geminiSessionRef) => {
-        audioCaptureManager.removeAllListeners('audio');
-        audioCaptureManager.on('audio', async ({ base64Data }) => {
-            if (geminiSessionRef.current) {
-                await sendAudioToGemini(base64Data, geminiSessionRef);
-            }
-        });
-        const result = await audioCaptureManager.start();
-        return result.success;
-    },
-    stopMacOSAudioCapture: () => audioCaptureManager.stop(),
     sendImageToGeminiHttp,
     setupAssistantIpcHandlers,
     toggleManualRecording,

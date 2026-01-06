@@ -28,10 +28,9 @@ const macOS = require('../../../utils/core/macOS');
  * @param {Object} deps - Dependencies
  * @param {BrowserWindow} deps.mainWindow - Main window reference
  * @param {Function} deps.createUpdateWindow - Function to create update window
- * @param {Function} deps.stopMacOSAudioCapture - Function to stop macOS audio capture
  * @param {Object} deps.storage - Storage module for saving keybinds
  */
-function registerApplicationHandlers({ mainWindow, createUpdateWindow, stopMacOSAudioCapture, storage }) {
+function registerApplicationHandlers({ mainWindow, createUpdateWindow, storage }) {
     console.log('[ApplicationHandler] Registering 9 application IPC handlers...');
 
     // ============ APP VERSION ============
@@ -43,9 +42,6 @@ function registerApplicationHandlers({ mainWindow, createUpdateWindow, stopMacOS
     // ============ QUIT APPLICATION ============
     ipcMain.handle('quit-application', async () => {
         try {
-            if (stopMacOSAudioCapture) {
-                stopMacOSAudioCapture();
-            }
             app.quit();
             return { success: true };
         } catch (error) {
@@ -57,9 +53,6 @@ function registerApplicationHandlers({ mainWindow, createUpdateWindow, stopMacOS
     // ============ RESTART APPLICATION ============
     ipcMain.handle('restart-application', async (event, options = {}) => {
         try {
-            if (stopMacOSAudioCapture) {
-                stopMacOSAudioCapture();
-            }
 
             // In development mode (not packaged), just reload the window instead of full restart
             // This avoids killing the Electron Forge dev server

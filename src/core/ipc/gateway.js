@@ -5,13 +5,12 @@
  *
  * Architecture:
  * - Storage: 24 channels (config, credentials, preferences, sessions, limits)
- * - Assistant: 11 channels (session, content sending, audio control)
+ * - Assistant: 9 channels (session, content sending)
  * - Window: 7 channels (view, minimize, keybinds, visibility, sizes, dialogs)
  * - Application: 9 channels (version, quit, restart, external, permissions, validation)
  * - Update: 4 channels (open/close update/upgrade dialogs)
- * - Audio: Direct integration with AudioCaptureManager events
  *
- * Total: 58 IPC channels documented in docs/IPC-SURFACE.md
+ * Total: 56 IPC channels documented in docs/IPC-SURFACE.md
  *
  * Usage:
  * ```javascript
@@ -64,9 +63,9 @@ function initializeIpcGateway({
     registerStorageHandlers(storage, rateLimitManager);
     console.log('[IPC Gateway] ✓ Storage handlers registered (24 channels)');
 
-    // ============ ASSISTANT SUBSYSTEM (11 channels) ============
+    // ============ ASSISTANT SUBSYSTEM (9 channels) ============
     registerAssistantHandlers({ assistantManager, geminiSessionRef });
-    console.log('[IPC Gateway] ✓ Assistant handlers registered (11 channels)');
+    console.log('[IPC Gateway] ✓ Assistant handlers registered (9 channels)');
 
     // ============ WINDOW SUBSYSTEM (7 channels) ============
     registerWindowHandlers({
@@ -81,7 +80,6 @@ function initializeIpcGateway({
     registerApplicationHandlers({
         mainWindow,
         createUpdateWindow,
-        stopMacOSAudioCapture: assistantManager.stopMacOSAudioCapture,
         storage,
     });
     console.log('[IPC Gateway] ✓ Application handlers registered (9 channels)');
@@ -95,7 +93,7 @@ function initializeIpcGateway({
 
     console.log('[IPC Gateway] ═══════════════════════════════════════════');
     console.log('[IPC Gateway] All IPC handlers initialized successfully');
-    console.log('[IPC Gateway] Total channels: 58 (see docs/IPC-SURFACE.md)');
+    console.log('[IPC Gateway] Total channels: 56 (see docs/IPC-SURFACE.md)');
     console.log('[IPC Gateway] ═══════════════════════════════════════════');
 }
 
