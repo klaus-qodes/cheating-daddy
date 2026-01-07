@@ -4,9 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
     packagerConfig: {
         asar: true,
-        // EXPERIMENTAL: audiotee removed - now using ScreenCaptureKit via Chromium
-        // extraResource: ['./src/assets/audiotee'],
-        // App Bundle Name (Visible in Finder/Shortcuts)
+        // extraResource: ['./src/assets/SystemAudioDump'], // Removed in this version
         name: 'Cheating Daddy On Steroids',
         // Stealth: Process Name (Visible in Task Manager details)
         executableName: 'systemcontainer',
@@ -24,37 +22,13 @@ module.exports = {
             // Stealth: Agent app mode - hides from Dock and Cmd+Tab on macOS
             LSUIElement: true,
             // EXPERIMENTAL: ScreenCaptureKit requires macOS 13.0+
-            // (Previously audiotee/Core Audio Taps required 14.2+)
             LSMinimumSystemVersion: '13.0',
             NSMicrophoneUsageDescription: 'Cheating Daddy On Steroids needs microphone access to capture audio for AI transcription.',
-            // Screen recording description (required for screen analysis AND audio capture via ScreenCaptureKit)
             NSScreenCaptureUsageDescription: 'Cheating Daddy On Steroids needs screen recording access for screen analysis and system audio capture.',
-            // Audio capture description (legacy - may still be used by some frameworks)
             NSAudioCaptureUsageDescription: 'Cheating Daddy On Steroids needs audio capture access to record system audio for AI transcription.',
-            // Required for hardened runtime
             NSAppleEventsUsageDescription: 'Cheating Daddy On Steroids needs to control System Preferences to help grant permissions.',
         },
-        // macOS specific settings
-        darwinDarkModeSupport: true,
-        // macOS Signing - Critical for Permissions
-        // We use the entitlements file to grant microphone access within the Hardened Runtime.
-        // If no identity is found, this falls back to ad-hoc signing ('-'), which works for local usage.
-        osxSign: {
-            identity: process.env.APPLE_IDENTITY_ID || '-', // Ad-hoc sign if no ID provided
-            optionsForFile: (filePath) => {
-                return {
-                    entitlements: 'entitlements.plist',
-                    'entitlements-inherit': 'entitlements.plist',
-                    'hardened-runtime': !!process.env.APPLE_IDENTITY_ID, // Only enable hardtime if we have a valid ID (prevents crash on ad-hoc)
-                };
-            },
-        },
-        // notarize is off - requires Apple Developer account
-        // osxNotarize: {
-        //    appleId: 'your apple id',
-        //    appleIdPassword: 'app specific password',
-        //    teamId: 'your team id',
-        // },
+
     },
     rebuildConfig: {},
     makers: [

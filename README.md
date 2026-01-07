@@ -96,15 +96,17 @@
 
 > **⚠️ Security Warning:** This app is not signed with an Apple Developer ID. It will be blocked by Gatekeeper.
 
-### Step 1: Remove "App is Damaged" Block
+**This application is built as an UNSIGNED developer build.**
+Apple's security mechanisms (Gatekeeper) will block it by default.
+You must manually remove the quarantine attribute to run it.
 
-You **cannot** double-click the app immediately. You must manually clear the quarantine attribute.
+### Step 1: Remove "App is Damaged" Block
 
 1.  Download the `.dmg` and drag the app to your **Applications** folder.
 2.  Open **Terminal** and copy-paste the following command:
 
 ```bash
-sudo xattr -cr "/Applications/Cheating Daddy On Steroids.app"
+ xattr -cr "/Applications/Cheating Daddy On Steroids.app"
 ```
 *(Enter your password when prompted - it won't show while typing)*
 
@@ -116,7 +118,7 @@ For **System Audio** to work, you must grant Screen Recording permissions and th
 
 1.  Open the app and follow the permission prompts.
 2.  Grant **Microphone** and **Screen Recording**.
-3.  **IMPORTANT:** Fully **Quit (Cmd+Q)** and **Restart** the app.
+3.  **IMPORTANT:** Fully **Quit** and **Restart** the app.
     *   *Without a restart, system audio capture will be silent.*
 
 ### Troubleshooting
@@ -125,7 +127,7 @@ If permissions get stuck or audio is silent:
 
 | Issue | Solution |
 |-------|----------|
-| **App Damaged / Trash** | Run `sudo xattr -cr /Applications/Cheating\ Daddy\ On\ Steroids.app` |
+| **App Damaged / Trash** | Run `xattr -cr /Applications/Cheating\ Daddy\ On\ Steroids.app` |
 | **Silent Audio** | Restart the app. If still silent, reset: `tccutil reset ScreenCapture` |
 | **Microphone Fail** | Reset permissions: `tccutil reset Microphone` |
 
